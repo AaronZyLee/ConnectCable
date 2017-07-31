@@ -1,0 +1,5 @@
+c:\users\dell\documents\visual studio 2012\Projects\ConnectCable\ConnectCable\bin\Debug\ConnectCable.dll
+c:\users\dell\documents\visual studio 2012\Projects\ConnectCable\ConnectCable\bin\Debug\ConnectCable.pdb
+c:\users\dell\documents\visual studio 2012\Projects\ConnectCable\ConnectCable\obj\Debug\ConnectCable.csprojResolveAssemblyReference.cache
+c:\users\dell\documents\visual studio 2012\Projects\ConnectCable\ConnectCable\obj\Debug\ConnectCable.dll
+c:\users\dell\documents\visual studio 2012\Projects\ConnectCable\ConnectCable\obj\Debug\ConnectCable.pdb
