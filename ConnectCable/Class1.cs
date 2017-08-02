@@ -204,7 +204,7 @@ namespace ConnectCable
         }
 
         /// <summary>
-        /// 判断两个电线杆前进方向是否一致（即方向向量夹角不为钝角）
+        /// 判断两个电线杆连接方式是否为pole1到pole2
         /// </summary>
         /// <param name="fi1">电线杆实例1</param>
         /// <param name="fi2">电线杆实例2</param>
@@ -262,6 +262,174 @@ namespace ConnectCable
         }
     }
 
+
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class ConnectSkippingLine : IExternalCommand
+    {
+        Document doc;
+        IList<XYZ> SJG1_27;
+        IList<XYZ> SJG4_27;
+
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
+            UIApplication app = commandData.Application;
+            doc = app.ActiveUIDocument.Document;
+            Autodesk.Revit.UI.Selection.Selection sel = app.ActiveUIDocument.Selection;
+
+            SJG1_27 = new List<XYZ>();
+            SJG1_27.Add(new XYZ(-8.4480, -12.4879, 112.58)); SJG1_27.Add(new XYZ(8.4490, -12.4924, 112.58));
+            SJG1_27.Add(new XYZ(-10.0884, -12.4879, 100.11)); SJG1_27.Add(new XYZ(10.0884, -12.4879, 100.11)); SJG1_27.Add(new XYZ(-8.4490, -12.4924, 87.65)); SJG1_27.Add(new XYZ(8.4490, -12.4925, 87.65));
+            SJG1_27.Add(new XYZ(-8.4480, 12.4961, 112.58)); SJG1_27.Add(new XYZ(8.4490, 12.4924, 112.58));
+            SJG1_27.Add(new XYZ(-10.0894, 12.5006, 100.11)); SJG1_27.Add(new XYZ(10.0894, 12.4924, 100.11)); SJG1_27.Add(new XYZ(-8.4490, 12.4925, 87.65)); SJG1_27.Add(new XYZ(8.4490, 12.4926, 87.65));
+
+            SJG4_27 = new List<XYZ>();
+            SJG4_27.Add(new XYZ(-9.7518, -12.4929, 112.58)); SJG4_27.Add(new XYZ(8.1155, -12.4929, 112.58));
+            SJG4_27.Add(new XYZ(-11.3922, -12.4929, 100.11)); SJG4_27.Add(new XYZ(9.7559, -12.4929, 100.11)); SJG4_27.Add(new XYZ(-9.7518, -12.4929, 87.74)); SJG4_27.Add(new XYZ(8.1155, -12.4929, 87.74));
+            SJG4_27.Add(new XYZ(-9.7518, 12.4929, 112.58)); SJG4_27.Add(new XYZ(8.1155, 12.4930, 112.58));
+            SJG4_27.Add(new XYZ(-11.3922, 12.4930, 100.11)); SJG4_27.Add(new XYZ(9.7559, 12.4930, 100.11)); SJG4_27.Add(new XYZ(-9.7518, 12.4929, 87.74)); SJG4_27.Add(new XYZ(8.1155, 12.4930, 87.74));
+
+            PoleFilter1 pf = new PoleFilter1();
+            Reference PoleRf = sel.PickObject(Autodesk.Revit.UI.Selection.ObjectType.Element, pf, "请选择要连接的两个电线杆");
+
+            if (PoleRf == null)
+            {
+                message = "未选中电线杆";
+                return Result.Failed;
+            }
+
+            FamilyInstance pole = doc.GetElement(PoleRf) as FamilyInstance;
+
+            Transaction trans = new Transaction(doc);
+
+            FamilySymbol fs = getSymbolType(doc, "跳线");
+            fs.Activate();
+
+            IList<XYZ> PointsOnPole = findConnectionPoints(pole);
+            if(fs!=null){
+                trans.Start("创建跳线");
+                for (int i = 0; i < PointsOnPole.Count; i++)
+                    CreateSkippingLine(doc, fs, pole, PointsOnPole[i]);
+                trans.Commit();
+                return Result.Succeeded;
+            }
+            return Result.Failed;
+
+        }
+
+        public void CreateSkippingLine(Document doc, FamilySymbol fs, FamilyInstance pole,XYZ connectPt)
+        {
+            FamilyInstance instance = AdaptiveComponentInstanceUtils.CreateAdaptiveComponentInstance(doc, fs);
+
+            IList<ElementId> placePointIds = new List<ElementId>();
+            placePointIds = AdaptiveComponentInstanceUtils.GetInstancePlacementPointElementRefIds(instance);
+
+            if (placePointIds.Count == 2)
+            {
+                ReferencePoint refpt1 = doc.GetElement(placePointIds[0]) as ReferencePoint;
+                ReferencePoint refpt2 = doc.GetElement(placePointIds[1]) as ReferencePoint;
+
+                if(connectPt.Y>0)
+                    refpt1.Position = TransformToModelXYZ(pole, new XYZ(connectPt.X,connectPt.Y-1.73228,connectPt.Z-0.82677));           
+                else
+                    refpt1.Position =  TransformToModelXYZ(pole,new XYZ(connectPt.X,connectPt.Y+1.73228,connectPt.Z-0.82677));
+
+                if (connectPt.X > 0)
+                {
+                    if (connectPt.Y > 0)
+                        refpt2.Position = TransformToModelXYZ(pole, new XYZ(connectPt.X - 0.11155, 0.261, connectPt.Z - 5.145));
+                    else
+                        refpt2.Position = TransformToModelXYZ(pole, new XYZ(connectPt.X - 0.11155, -0.261, connectPt.Z - 5.145));
+                }
+                else
+                {
+                    if (connectPt.Y > 0)
+                        refpt2.Position = TransformToModelXYZ(pole, new XYZ(connectPt.X + 0.11155, 0.261, connectPt.Z - 5.145));
+                    else
+                        refpt2.Position = TransformToModelXYZ(pole, new XYZ(connectPt.X + 0.11155, -0.261, connectPt.Z - 5.145));
+                }       
+            }
+            //instance.LookupParameter("水平偏移").Set(0);
+        }
+
+        public XYZ TransformToModelXYZ(FamilyInstance fi,XYZ origin)
+        {
+            Transform trans = null;
+            Options opt = new Options();
+            opt.ComputeReferences = false;
+            opt.View = doc.ActiveView;
+            GeometryElement geoElement = fi.get_Geometry(opt);
+            foreach (GeometryObject obj in geoElement)
+            {
+                if (obj is GeometryInstance)
+                {
+                    GeometryInstance ins = obj as GeometryInstance;
+                    trans = ins.Transform;
+                    break;
+                }
+            }
+            if (trans != null)  
+                return trans.OfPoint(origin);
+            return null;
+        }
+
+        public IList<XYZ> findConnectionPoints(FamilyInstance fi)
+        {
+            string name = fi.Symbol.Family.Name;
+            switch (name)
+            {
+                case ("1GGE4-SJG1-27 整体"):
+                    return SJG1_27;
+                case ("1GGE4-SJG4-27 整体"):
+                    return SJG4_27;
+            }
+            return null;
+        }
+
+        public FamilySymbol getSymbolType(Document doc, string name)
+        {
+            FilteredElementIdIterator workWellItrator = new FilteredElementCollector(doc).OfClass(typeof(Family)).GetElementIdIterator();
+            workWellItrator.Reset();
+            FamilySymbol getsymbol = null;
+            while (workWellItrator.MoveNext())
+            {
+                Family family = doc.GetElement(workWellItrator.Current) as Family;
+                foreach (ElementId id in family.GetFamilySymbolIds())
+                {
+                    FamilySymbol symbol = doc.GetElement(id) as FamilySymbol;
+                    if (symbol.Name == name)
+                    {
+                        getsymbol = symbol;
+                    }
+                }
+            }
+            return getsymbol;
+
+        }
+    }
+
+
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class FindCoordinate : IExternalCommand
+    {
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
+            UIApplication app = commandData.Application;
+            Document doc = app.ActiveUIDocument.Document;
+            Autodesk.Revit.UI.Selection.Selection sel = app.ActiveUIDocument.Selection;
+
+            for (int i = 0; i < 16; i++)
+            {
+                XYZ pt = sel.PickPoint();
+                TaskDialog.Show("1", pt.ToString());
+
+            }
+            return Result.Succeeded;
+        }
+    }
+
+
     public class PoleFilter : Autodesk.Revit.UI.Selection.ISelectionFilter
     {
 
@@ -269,6 +437,29 @@ namespace ConnectCable
         {
             List<string> familyName = new List<string>();
             string[] fn = { "1GGE4-SJG1-27 整体", "1GGE4-SJG4-27 整体", "1GGE4-SZG2-27-整体", "1GGE4-SZG2-30-整体" };
+            familyName.AddRange(fn);
+
+            if (elem is FamilyInstance)
+            {
+                FamilyInstance f = elem as FamilyInstance;
+                return familyName.Contains(f.Symbol.Family.Name);
+            }
+            return false;
+        }
+
+        public bool AllowReference(Reference reference, XYZ position)
+        {
+            return true;
+        }
+    }
+
+    public class PoleFilter1 : Autodesk.Revit.UI.Selection.ISelectionFilter
+    {
+
+        public bool AllowElement(Element elem)
+        {
+            List<string> familyName = new List<string>();
+            string[] fn = { "1GGE4-SJG1-27 整体", "1GGE4-SJG4-27 整体" };
             familyName.AddRange(fn);
 
             if (elem is FamilyInstance)
