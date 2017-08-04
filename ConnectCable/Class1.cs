@@ -12,9 +12,7 @@ namespace ConnectCable
 {
     [Transaction(TransactionMode.Manual)]
     [Regeneration(RegenerationOption.Manual)]
-
-    
-    public class connectCable : IExternalCommand
+    public class ConnectCable : IExternalCommand
     {
         Document doc;
         IList<XYZ> SJG1_27_front;
@@ -85,8 +83,18 @@ namespace ConnectCable
             if(pole1.FacingOrientation.DotProduct(pole2.FacingOrientation)<0){
                 Transaction trans1 = new Transaction(doc);
                 trans1.Start("旋转电线杆");
-                Line axis = Line.CreateUnbound((pole2.Location as LocationPoint).Point,XYZ.BasisZ);
-                ElementTransformUtils.RotateElement(doc, pole2.Id, axis, Math.PI);
+                //不是登杆时旋转pole2，否则旋转pole1
+                if (pole2.Symbol.Family.Name != "1GGE4-SJG4-27 电缆登杆")
+                {
+                    Line axis = Line.CreateUnbound((pole2.Location as LocationPoint).Point, XYZ.BasisZ);
+                    ElementTransformUtils.RotateElement(doc, pole2.Id, axis, Math.PI);
+                }
+                else
+                {
+                    Line axis = Line.CreateUnbound((pole1.Location as LocationPoint).Point, XYZ.BasisZ);
+                    ElementTransformUtils.RotateElement(doc, pole1.Id, axis, Math.PI);
+                }
+
                 trans1.Commit();
             }            
 
@@ -434,7 +442,6 @@ namespace ConnectCable
             return Result.Succeeded;
         }
     }
-
 
     public class PoleFilter : Autodesk.Revit.UI.Selection.ISelectionFilter
     {
