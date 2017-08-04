@@ -25,6 +25,7 @@ namespace ConnectCable
         IList<XYZ> SZG2_27_back;
         IList<XYZ> SZG2_30_front;
         IList<XYZ> SZG2_30_back;
+        IList<XYZ> SJG4_27_half;
 
 
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
@@ -60,6 +61,10 @@ namespace ConnectCable
             SZG2_30_back = new List<XYZ>();
             SZG2_30_back.Add(new XYZ(-7.1358, 0.45, 128.13)); SZG2_30_back.Add(new XYZ(7.1358, 0.45, 128.13)); SZG2_30_back.Add(new XYZ(-8.4482, 0.45, 115.99)); SZG2_30_back.Add(new XYZ(8.4482, 0.45, 115.99));
             SZG2_30_back.Add(new XYZ(-10.089, 0.45, 103.2)); SZG2_30_back.Add(new XYZ(10.089, 0.49, 103.2)); SZG2_30_back.Add(new XYZ(-8.4479, 0.45, 90.4)); SZG2_30_back.Add(new XYZ(8.4479, 0.45, 90.4));
+
+            SJG4_27_half = new List<XYZ>();
+            SJG4_27_half.Add(new XYZ(-8.4477, 2.5982, 126.67)); SJG4_27_half.Add(new XYZ(6.8073, 2.5982, 126.67)); SJG4_27_half.Add(new XYZ(-9.7527, 10.7049, 113.56)); SJG4_27_half.Add(new XYZ(8.1164, 10.7049, 113.56));
+            SJG4_27_half.Add(new XYZ(-11.3931, 10.7049, 101.1)); SJG4_27_half.Add(new XYZ(9.7568, 10.7049, 101.1)); SJG4_27_half.Add(new XYZ(-9.7527, 10.7049, 88.73)); SJG4_27_half.Add(new XYZ(8.1164, 10.7049, 88.73));
 
             #endregion
 
@@ -228,6 +233,8 @@ namespace ConnectCable
             string name = fi.Symbol.Family.Name;
             switch (name)
             {
+                case ("1GGE4-SJG4-27 电缆登杆"):
+                    return SJG4_27_half;
                 case("1GGE4-SJG1-27 整体"):
                     if (dir == Direction.front)
                         return SJG1_27_front;
@@ -349,7 +356,6 @@ namespace ConnectCable
                         refpt2.Position = TransformToModelXYZ(pole, new XYZ(connectPt.X + 0.11155, -0.261, connectPt.Z - 5.145));
                 }       
             }
-            //instance.LookupParameter("水平偏移").Set(0);
         }
 
         public XYZ TransformToModelXYZ(FamilyInstance fi,XYZ origin)
@@ -436,7 +442,7 @@ namespace ConnectCable
         public bool AllowElement(Element elem)
         {
             List<string> familyName = new List<string>();
-            string[] fn = { "1GGE4-SJG1-27 整体", "1GGE4-SJG4-27 整体", "1GGE4-SZG2-27-整体", "1GGE4-SZG2-30-整体" };
+            string[] fn = { "1GGE4-SJG1-27 整体", "1GGE4-SJG4-27 整体", "1GGE4-SZG2-27-整体", "1GGE4-SZG2-30-整体", "1GGE4-SJG4-27 电缆登杆" };
             familyName.AddRange(fn);
 
             if (elem is FamilyInstance)
